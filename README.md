@@ -10,7 +10,7 @@ Please refer to ./help/prepare.pdf .
   
 
 #### Contact Infomation
-Electronic Enginerring Department, Tsinghua University, Haidian District, Beijing  
+Electronic Engineering Department, Tsinghua University, Haidian District, Beijing  
 Class wu53  
   E-mail: wang_sy1997@163.com  
   Wechat: wsy1776041951
