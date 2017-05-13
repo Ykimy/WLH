@@ -9,6 +9,7 @@ import sys
 import core
 import requests
 import os
+import time
 
 '''Courses = [
 {'notice': [], 'homework': [], 'file': [], 'name': '二年级男生游泳'} ,
@@ -55,6 +56,8 @@ uniHeight = 250
 miniHeight = 30
 leftWhite = 20
 
+default_download_dir=""
+
 class appWin(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -77,7 +80,7 @@ class appWin(QMainWindow):
         self.logWidget.setGeometry(0, 0, 591, 377)
         self.setMouseTracking(False)
         self.setAutoFillBackground(False)
-        self.logWidget.setStyleSheet("background:rgb(224, 201, 255)")
+        self.logWidget.setStyleSheet("background: rgb(224, 201, 255)")
         self.label = QLabel(self.logWidget)
         self.label.setGeometry(QtCore.QRect(200, 20, 221, 71))
         font.setPointSize(12)
@@ -178,7 +181,7 @@ class appWin(QMainWindow):
                 QMessageBox.warning(self, "警告", "网络未连接！")
             else:
                 QMessageBox.warning(self, "警告", "用户名或密码错误！")
-            self.pushButton.setText("登录")
+            self.pushButton.setText("正在登录...")
             return 0
         Courses = preCourses[1]
         self.logWidget.setVisible(False)
@@ -268,14 +271,14 @@ class appWin(QMainWindow):
         self.noticeScroll = QScrollArea(self.centralWidget)
         self.noticeScroll.setGeometry(QtCore.QRect(X, Y, width, uniHeight))
         self.noticeScroll.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-        self.noticeScroll.setStyleSheet("backgroud:rgb(114, 206, 255)")
+        self.noticeScroll.setStyleSheet("background:rgb(114, 206, 255)")
         self.noticeWidget = QWidget(self.centralWidget)
         noticeHeight = miniHeight * noteNum + 100
         if noticeHeight < uniHeight + 100:
             noticeHeight = uniHeight + 100
         self.noticeWidget.setGeometry(QtCore.QRect(X, Y, width, noticeHeight))
         self.noticeScroll.setWidget(self.noticeWidget)
-        self.noticeWidget.setStyleSheet("backgroud:rgb(114, 206, 255)")
+        self.noticeWidget.setStyleSheet("background:rgb(114, 206, 255)")
         y = 0
         count = 0
         for note in self.notices:
@@ -340,11 +343,11 @@ class appWin(QMainWindow):
         self.hwScroll = QScrollArea(self.centralWidget)
         self.hwScroll.setGeometry(QtCore.QRect(X, Y, width, uniHeight))
         self.hwScroll.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-        self.hwScroll.setStyleSheet("backgroud:rgb(114, 206, 255)")
+        self.hwScroll.setStyleSheet("background:rgb(114, 206, 255)")
         self.hwWidget = QWidget(self.centralWidget)
         self.hwWidget.setGeometry(QtCore.QRect(X, Y, width, miniHeight * hw_num + 100))
         self.hwScroll.setWidget(self.hwWidget)
-        self.hwWidget.setStyleSheet("backgroud:rgb(114, 206, 255)")
+        self.hwWidget.setStyleSheet("background:rgb(114, 206, 255)")
         Y = 5
         count = 0
         self.HWfiles = []
@@ -404,14 +407,14 @@ class appWin(QMainWindow):
         self.fileScroll = QScrollArea(self.centralWidget)
         self.fileScroll.setGeometry(QtCore.QRect(X, Y, width, uniHeight))
         self.fileScroll.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-        self.fileScroll.setStyleSheet("backgroud:rgb(114, 206, 255)")
+        self.fileScroll.setStyleSheet("background:rgb(114, 206, 255)")
         self.fileWidget = QWidget(self.centralWidget)
         hwHeight = miniHeight * fileNum + 100
         if hwHeight < uniHeight + 100:
             hwHeight = uniHeight + 100
         self.fileWidget.setGeometry(QtCore.QRect(X, Y, width, hwHeight))
         self.fileScroll.setWidget(self.fileWidget)
-        self.fileWidget.setStyleSheet("backgroud:rgb(114, 206, 255)")
+        self.fileWidget.setStyleSheet("background:rgb(114, 206, 255)")
         # 第一行用去miniHeight + 5
         Y = 5
         count = 0
@@ -429,19 +432,21 @@ class appWin(QMainWindow):
             Y = Y + course_height
             y = miniHeight
             tmp = 0
-            newfiles = []
-            for file in course['file']:
-                if(file['state'] == '新文件'):
-                    newfiles.append(file)
-            for file in course['file']:
-                if(file['state'] != '新文件'):
-                    newfiles.append(file)
+            newfiles = sorted(course['file'], key=lambda file:file['state']!='新文件')
+
+            # newfiles = []
+            # for file in course['file']:
+            #     if(file['state'] == '新文件'):
+            #         newfiles.append(file)
+            # for file in course['file']:
+            #     if(file['state'] != '新文件'):
+            #         newfiles.append(file)
             course['file'] = newfiles
             for file in course['file']:
                 self.files.append(file)
-                filename = file['title']
-                filememo = file['memory']
-                filedate = file['time']
+                filename = (file['title']).replace(u'\xa0', u' ')
+                filememo = file['memory'].replace(u'\xa0', u' ')
+                filedate = file['time'].replace(u'\xa0', u' ')
                 new = True if file['state'] == '新文件' else False
                 self.getOneFile(oneCourse, filename, filememo, filedate, count, 2 * leftWhite, y, new)
                 y = y + miniHeight
@@ -496,28 +501,35 @@ class appWin(QMainWindow):
         self.getFile(i)
 
     def downloadAllFiles(self):
+        listi = []
         i = 0
         for file in self.files:
             if file['state'] == "新文件":
-                self.getFile(i)
+                listi.append(i)
             i += 1
+        if len(listi)>0:
+            self.getFile(*listi)
 
-    def getFile(self, i):
-        file = self.files[i]
-        url = file['url']
-        name = file['title']
-        thefile = core.s.get(url, stream=True)
-        tem_filename = thefile.headers.get('Content-Disposition')
-        filename = tem_filename.split('=')[1]
-        filename = filename.strip('"')
-        filetype = filename.split('.')
-        filetype = filetype[filetype.__len__() - 1]
-        name = name + '.' + filetype
-        path = QFileDialog.getSaveFileName(self, 'Save File', name, filetype)
-        if (path[0] == ''):
-            return
-        with open(path[0], "wb") as code:
-            code.write(thefile.content)
+    def getFile(self, *listi):
+        global default_download_dir
+        path = QFileDialog.getExistingDirectory(self, '请选择文件目录', default_download_dir)
+        if path == '':
+            return 
+        for i in listi:
+            file = self.files[i]
+            url = file['url']
+            name = file['title']
+            thefile = core.s.get(url, stream=True)
+            tem_filename = thefile.headers.get('Content-Disposition')
+            filename = tem_filename.split('=')[1]
+            filename = filename.strip('"')
+            filetype = filename.split('.')[-1]
+            #filetype = filetype[filetype.__len__() - 1]
+            name = name + '.' + filetype
+            dirname = os.path.normpath(os.path.join(path, name))
+            with open(dirname, "wb") as code:
+                code.write(thefile.content)
+        default_download_dir = path
         QMessageBox.information(self, "文件下载", "保存成功!")
 
     def downloadHWFile(self):
@@ -550,16 +562,21 @@ class appWin(QMainWindow):
     def remindHW(self):
         code = open(".\\未交作业统计.txt", "w+")
         tmp = ""
+        #time.strptime(hw['ddl'], format)
         for hw in self.hws:
+            today = time.strftime('%Y-%m-%d')
+            if hw['ddl']<today:
+                continue
             tmp = hw['ddl'] + ":" + hw['name'] + "\n"
             try:
-                code.write(hw['name'])
+                code.write(tmp)
             except:
                 QMessageBox.warning(self, "警告", "保存失败！")
                 code.close()
                 return False
         code.close()
         QMessageBox.information(self, "通知", "保存成功！")
+        os.system('notepad 未交作业统计.txt')
 
 def hash(pre):
     pass
