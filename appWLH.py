@@ -448,7 +448,6 @@ class appWin(QMainWindow):
                 filememo = file['memory'].replace(u'\xa0', u' ')
                 filedate = file['time'].replace(u'\xa0', u' ')
                 new = True if file['state'] == '新文件' else False
-                print(filename, filememo, filedate)
                 self.getOneFile(oneCourse, filename, filememo, filedate, count, 2 * leftWhite, y, new)
                 y = y + miniHeight
                 count += 1
