@@ -18,6 +18,7 @@ def logIn(userid, userpass):     #抓取所有文本信息
     login_data = {'userid': userid, 'userpass': userpass}
     try:
         s.post('https://learn.tsinghua.edu.cn/MultiLanguage/lesson/teacher/loginteacher.jsp', login_data)
+        #s.post('https://learn.tsinghua.edu.cn/index.jsp', login_data)
         r = s.get('http://learn.tsinghua.edu.cn/MultiLanguage/lesson/student/MyCourse.jsp?language=cn')
     except:
         return (False, 1)  #错误代码1：网络未连接
@@ -109,7 +110,11 @@ def logIn(userid, userpass):     #抓取所有文本信息
                 attachname = tem_attachname.a.text
             course[i]['homework'].append({'name': tem[0], 'release_time': tem[1], 'ddl': tem[2], 'ifsubmit': tem[3],
                                           'memory': tem[4], 'title_url': url, 'filename': filename, 'attachname': attachname})
-    return (True, course)
+    old_course=[] 
+    for c in course:
+        if 'name' in c.keys():
+            old_course.append(c)
+    return (True, old_course)
 
 
 def get_file(name, url, path=''):  #调用方式参考: get_file(name=course[0]['file'][0]['title'], url=course[0]['file'][0]['url'], path='F:\\')
@@ -154,6 +159,12 @@ def initial():
 
 if __name__ == "__main__":
     courses = logIn("wangsiyu15", "wsy13579+")
+    if courses[0]==False:
+        if courses[1]==1:
+            print("网络未连接")
+        elif courses[1]==2:
+            print("用户名或密码错误")
+        exit()
     for course in courses:
         hws = course['homework']
         for hw in hws:
